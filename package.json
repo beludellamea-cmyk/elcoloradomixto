@@ -1,0 +1,17 @@
+{
+  "name": "mision-bermejo-3d",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Misión Bermejo 3D - Etapa 2: cámara y cuerpo real con MediaPipe (sin conexión)",
+  "scripts": {
+    "build": "node build.mjs && node build-datos.mjs",
+    "datos": "node build-datos.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "three": "^0.186.1"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "0.10.21"
+  }
+}

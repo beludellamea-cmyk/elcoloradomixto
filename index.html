@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Misión Bermejo 3D</title>
+  <meta name="description" content="Videojuego educativo 3D sobre la historia de El Colorado, Formosa.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23b8573a'/%3E%3Ccircle cx='32' cy='30' r='14' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+  <canvas id="mundo" aria-label="Mundo 3D de Misión Bermejo" tabindex="-1"></canvas>
+
+  <!-- ============ HUD ============ -->
+  <div id="hud" class="oculto" aria-live="off">
+    <div class="hud-izq">
+      <div class="chip chip-puntos"><span class="chip-etq">Puntos</span><b id="hudPuntos">0</b></div>
+      <div class="chip chip-algodon" title="Capullos de algodón"><span class="ico-algodon" aria-hidden="true"></span><span class="chip-etq">Algodón</span><b id="hudAlgodon">0</b></div>
+    </div>
+    <ol class="hud-progreso" id="hudProgreso" aria-label="Progreso por estaciones"></ol>
+    <div class="hud-der">
+      <button class="btn-icono" id="btnSonido" aria-label="Sonido" title="Sonido (M)">🔊</button>
+      <button class="btn-icono" id="btnAccesib" aria-label="Opciones de accesibilidad" title="Opciones (O)">♿</button>
+      <button class="btn-icono" id="btnPausa" aria-label="Pausa" title="Pausa (P o Esc)">⏸</button>
+    </div>
+    <div class="hud-destino" id="hudDestino"></div>
+  </div>
+
+  <div id="ayuda" class="oculto" role="note"></div>
+
+  <!-- Controles alternativos con mouse / pantalla táctil -->
+  <div id="controlesTactiles" class="oculto" aria-label="Controles alternativos">
+    <button id="tcIzq" aria-label="Carril a la izquierda">◀</button>
+    <button id="tcAvanzar" aria-label="Mantener para caminar">Caminar ▲</button>
+    <button id="tcDer" aria-label="Carril a la derecha">▶</button>
+  </div>
+
+  <button class="btn btn-grande btn-principal oculto" id="btnVolverCartel">↩ Volver al cartel</button>
+  <div id="aviso" role="status" aria-live="polite"></div>
+  <div id="destello"></div>
+
+  <!-- ============ PANTALLA INICIAL ============ -->
+  <section id="pantallaInicio" class="pantalla" aria-labelledby="tituloJuego">
+    <div class="inicio-contenido">
+      <p class="inicio-sup">El Colorado · Formosa · Argentina</p>
+      <h1 id="tituloJuego"><span>MISIÓN</span> <em>BERMEJO</em> <small>3D</small></h1>
+      <p class="inicio-sub">Recorré 8 lugares de la historia de tu ciudad, juntá algodón y respondé los desafíos.</p>
+      <div class="inicio-botones">
+        <button class="btn btn-grande btn-principal" id="btnJugarCamara">📷 Jugar con la cámara</button>
+        <button class="btn btn-grande" id="btnJugarTeclado">⌨ Jugar con el teclado</button>
+        <button class="btn btn-grande" id="btnComoSeJuega">❓ Cómo se juega</button>
+        <button class="btn btn-grande" id="btnCreditos">🖼 Créditos de las fotos</button>
+        <button class="btn btn-grande" id="btnOpcionesInicio">♿ Accesibilidad</button>
+      </div>
+      <p class="inicio-error oculto" id="inicioError" role="alert"></p>
+      <p class="inicio-etapa">La cámara recorta tu silueta y la pone en el pueblo. Se procesa solo en esta computadora. Si no tenés cámara, jugá con el teclado.</p>
+      <p class="inicio-pie">Proyecto DIA — Didáctica con IA · Instructivo N.º 43 (Realidad mixta)</p>
+      <button class="enlace" id="btnAcerca">Acerca de los datos históricos</button>
+    </div>
+  </section>
+
+  <!-- ============ CARTEL DE ESTACIÓN ============ -->
+  <section id="cartel" class="cartel oculto" role="dialog" aria-modal="true" aria-labelledby="cartelTitulo">
+    <header class="cartel-cab">
+      <span class="cartel-num" id="cartelNum">1</span>
+      <div class="cartel-tit">
+        <p class="cartel-sup" id="cartelSup">Estación 1 de 8</p>
+        <h2 id="cartelTitulo">Título</h2>
+      </div>
+      <span class="cartel-anio" id="cartelAnio">1904</span>
+      <button class="btn btn-chico btn-ver" id="btnVerLugar" title="Ocultar el cartel y mirar el lugar en 3D (V)">👁 Ver el lugar</button>
+    </header>
+
+    <div id="cartelHistoria" class="cartel-paso">
+      <p class="cartel-origen" id="textoAnio"></p>
+      <figure id="cartelFoto" class="cartel-foto oculto"><img id="cartelFotoImg" alt=""><figcaption id="cartelFotoCred"></figcaption></figure>
+      <div class="cartel-dos">
+        <div>
+          <p class="cartel-bloque-tit">📜 Un poco de historia</p>
+          <p id="textoHistoria" class="cartel-texto"></p>
+        </div>
+        <div class="cartel-curio">
+          <p class="cartel-bloque-tit">💡 ¿Sabías que…?</p>
+          <p id="textoCuriosidad" class="cartel-texto"></p>
+        </div>
+      </div>
+      <div class="cartel-acciones">
+        <button class="btn btn-secundario" id="btnLeer">🔊 Escuchar</button>
+        <button class="btn btn-principal btn-grande" id="btnAPregunta">Ir a la pregunta ➜</button>
+      </div>
+    </div>
+
+    <div id="cartelPregunta" class="cartel-paso oculto">
+      <p class="cartel-bloque-tit">❓ Desafío</p>
+      <p id="textoPregunta" class="cartel-pregunta"></p>
+      <div id="opciones" class="opciones"></div>
+      <p id="retro" class="retro" role="status" aria-live="polite"></p>
+      <div class="cartel-acciones">
+        <button class="btn btn-secundario" id="btnLeerPregunta">🔊 Escuchar</button>
+        <button class="btn btn-principal btn-grande oculto" id="btnSeguir">Seguir el recorrido ➜</button>
+      </div>
+    </div>
+    <div id="cartelVF" class="cartel-paso oculto">
+      <p class="cartel-bloque-tit">✅ Verdadero o falso</p>
+      <p id="textoVF" class="cartel-pregunta"></p>
+      <div class="opciones">
+        <button class="opcion" id="btnVerdadero" type="button"><span class="letra">V</span><span class="txt">Verdadero</span><small>✋ izquierda · tecla T</small></button>
+        <button class="opcion" id="btnFalso" type="button"><span class="letra">F</span><span class="txt">Falso</span><small>✋ derecha · tecla F</small></button>
+      </div>
+      <p id="retroVF" class="retro" role="status" aria-live="polite"></p>
+      <div class="cartel-acciones">
+        <button class="btn btn-principal btn-grande oculto" id="btnSeguirVF">Seguir el recorrido ➜</button>
+      </div>
+    </div>
+    <p class="cartel-fuente" id="cartelFuente"></p>
+  </section>
+
+  <!-- ============ AVISO DE PRIVACIDAD (antes de usar la cámara) ============ -->
+  <section id="pantallaCamara" class="pantalla oculto" role="dialog" aria-modal="true" aria-labelledby="camTit">
+    <div class="tarjeta tarjeta-ancha">
+      <h2 id="camTit">📷 Antes de usar la cámara</h2>
+      <ul class="cam-aviso">
+        <li><b>Privacidad:</b> la imagen se procesa en esta computadora. No se graba, no se guarda y no se envía a internet.</li>
+        <li><b>Consentimiento:</b> nadie juega si no quiere. Cada persona que juega debe aceptar este aviso. Si no querés, elegí jugar con el teclado.</li>
+        <li><b>Espacio:</b> ubicate a unos 2 metros de la cámara, de cuerpo entero, con buena luz de frente (no con la ventana detrás). Despejá el lugar alrededor.</li>
+        <li><b>Cuidado:</b> caminá en el lugar con tranquilidad. Si sentís molestias, pará. Podés usar el modo sentado en Accesibilidad.</li>
+        <li><b>Para dejar de usar la cámara</b> volvé a la pantalla inicial o terminá el recorrido: la cámara se apaga.</li>
+      </ul>
+      <div class="inicio-botones">
+        <button class="btn btn-grande btn-principal" id="btnAceptarCamara">✔ Entendido, usar la cámara</button>
+        <button class="btn btn-grande" id="btnTecladoCamara">⌨ Mejor con el teclado</button>
+        <button class="btn btn-grande" id="btnVolverCamara">Volver</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CARGA DE LA CÁMARA ============ -->
+  <div id="cargando" class="cargando oculto" role="status"><div class="cargando-caja"><div class="cargando-giro" aria-hidden="true"></div><p id="cargandoTexto">Cargando…</p></div></div>
+
+  <!-- ============ CALIBRACIÓN Y ESTADO DE LA CÁMARA ============ -->
+  <div id="calibracion" class="calibracion oculto" role="status" aria-live="polite">
+    <p class="calibracion-tit">Calibración</p>
+    <p id="calibracionTexto" class="calibracion-texto">Quedate quieto y de frente</p>
+    <div class="calibracion-barra"><div id="calibracionBarra"></div></div>
+    <p class="calibracion-pie">Cuando termine, caminá en el lugar. Levantá una mano para recoger algodón.</p>
+  </div>
+  <div id="camEstado" class="cam-estado oculto" aria-live="off"></div>
+
+  <!-- ============ PAUSA ============ -->
+  <section id="pantallaPausa" class="pantalla oculto" role="dialog" aria-modal="true" aria-labelledby="pausaTit">
+    <div class="tarjeta">
+      <h2 id="pausaTit">Pausa</h2>
+      <div class="inicio-botones">
+        <button class="btn btn-grande btn-principal" id="btnContinuar">▶ Continuar</button>
+        <button class="btn btn-grande" id="btnOpcionesPausa">♿ Accesibilidad</button>
+        <button class="btn btn-grande" id="btnReiniciar">↺ Empezar de nuevo</button>
+        <button class="btn btn-grande" id="btnAlInicio">⌂ Pantalla inicial</button>
+      </div>
+      <details class="prueba">
+        <summary>Herramientas de prueba (etapa de desarrollo)</summary>
+        <p>Saltar directamente a una estación:</p>
+        <div id="saltos" class="saltos"></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ OPCIONES ============ -->
+  <section id="pantallaOpciones" class="pantalla oculto" role="dialog" aria-modal="true" aria-labelledby="opcTit">
+    <div class="tarjeta tarjeta-ancha">
+      <h2 id="opcTit">♿ Accesibilidad y ajustes</h2>
+      <div class="opc-grilla">
+        <div class="opc">
+          <label for="opcTexto">Tamaño del texto</label>
+          <div class="opc-control">
+            <button class="btn btn-chico" id="opcTextoMenos" aria-label="Texto más chico">A−</button>
+            <output id="opcTexto">100%</output>
+            <button class="btn btn-chico" id="opcTextoMas" aria-label="Texto más grande">A+</button>
+          </div>
+        </div>
+        <div class="opc">
+          <label for="opcVelocidad">Velocidad del recorrido</label>
+          <select id="opcVelocidad">
+            <option value="0.55">Lenta</option>
+            <option value="1" selected>Normal</option>
+          </select>
+        </div>
+        <label class="opc opc-check"><input type="checkbox" id="opcSentado"> <span><b>Modo sentado</b><br><small>Avanza solo; vos elegís el carril con ← → (o los botones en pantalla).</small></span></label>
+        <label class="opc opc-check"><input type="checkbox" id="opcContraste"> <span><b>Alto contraste</b><br><small>Paneles y textos con colores muy marcados.</small></span></label>
+        <label class="opc opc-check"><input type="checkbox" id="opcMovimiento"> <span><b>Reducir movimiento</b><br><small>Sin sacudidas ni destellos; menos partículas.</small></span></label>
+        <label class="opc opc-check"><input type="checkbox" id="opcObstaculos" checked> <span><b>Obstáculos</b><br><small>Si lo apagás, el camino queda despejado.</small></span></label>
+        <label class="opc opc-check"><input type="checkbox" id="opcSonido" checked> <span><b>Sonido</b><br><small>Efectos de juego.</small></span></label>
+        <label class="opc opc-check"><input type="checkbox" id="opcLiviano"> <span><b>Gráficos livianos</b><br><small>Sin sombras y con menor resolución (para computadoras lentas).</small></span></label>
+        <label class="opc opc-check"><input type="checkbox" id="opcTactil" checked> <span><b>Botones en pantalla</b><br><small>Controles alternativos para mouse o pantalla táctil.</small></span></label>
+        <label class="opc opc-check"><input type="checkbox" id="opcEquipo"> <span><b>Modo equipo</b><br><small>Una persona camina con el cuerpo y otra responde con el teclado: 1, 2, 3 (o A, B, C) y T / F para verdadero o falso.</small></span></label>
+        <div class="opc">
+          <label for="opcPeso">Tu peso (kg), para la estimación de calorías</label>
+          <input type="number" id="opcPeso" min="20" max="250" step="1" placeholder="ej. 60" inputmode="numeric">
+          <small class="opc-nota">Es solo para estimar las calorías al final. No se guarda fuera de este navegador.</small>
+        </div>
+      </div>
+      <button class="btn btn-grande btn-principal" id="btnCerrarOpciones">Listo</button>
+    </div>
+  </section>
+
+  <!-- ============ CÓMO SE JUEGA ============ -->
+  <section id="pantallaAyuda" class="pantalla oculto" role="dialog" aria-modal="true" aria-labelledby="ayudaTit">
+    <div class="tarjeta tarjeta-ancha">
+      <h2 id="ayudaTit">Cómo se juega</h2>
+      <ul class="lista-teclas">
+        <li><span><b>Con la cámara:</b> caminá en el lugar para avanzar · pasos a los costados para cambiar de carril · ✋ levantá una mano para recoger algodón.</span></li>
+        <li><span><b>Responder con las manos:</b> mano izquierda = A · derecha = B · las dos = C (mantené la mano arriba un momento).</span></li>
+        <li><kbd>↑</kbd> <kbd>W</kbd> <span><b>Con el teclado:</b> mantené presionada para caminar.</span></li>
+        <li><kbd>←</kbd> <kbd>→</kbd> <kbd>A</kbd> <kbd>D</kbd> <span><b>Cambiar de carril</b> (teclado).</span></li>
+        <li><kbd>Espacio</kbd> <kbd>Enter</kbd> <span>Avanzar en los carteles (teclado).</span></li>
+        <li><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <span><b>Responder</b> la pregunta con el teclado (también podés hacer clic).</span></li>
+        <li><kbd>P</kbd> <kbd>Esc</kbd> <span>Pausa y menú.</span></li>
+        <li><kbd>M</kbd> <kbd>O</kbd> <span>Sonido y accesibilidad.</span></li>
+      </ul>
+      <p class="ayuda-meta"><b>Objetivo:</b> llegar a las 8 estaciones, juntar los capullos de algodón ☁ y esquivar las cajas y los barriles. En cada cartel leés la historia y respondés una pregunta: <b>100 puntos</b> si acertás a la primera, <b>50</b> si acertás en el segundo intento. Cada algodón suma <b>10</b>; chocar con un obstáculo resta <b>5</b>.</p>
+      <button class="btn btn-grande btn-principal" id="btnCerrarAyuda">Entendido</button>
+    </div>
+  </section>
+
+  <!-- ============ ACERCA DE ============ -->
+  <section id="pantallaAcerca" class="pantalla oculto" role="dialog" aria-modal="true" aria-labelledby="acercaTit">
+    <div class="tarjeta tarjeta-ancha">
+      <h2 id="acercaTit">Acerca de los datos históricos</h2>
+      <p class="cartel-texto">Las fichas de las 8 estaciones fueron elaboradas en NotebookLM a partir de documentación histórica cargada por el grupo. Los datos y las referencias <b>deben contrastarse con las páginas originales antes de publicar</b> el videojuego.</p>
+      <p class="cartel-texto">Los contenidos se pueden revisar y editar en el archivo <code>assets/js/estaciones.js</code>.</p>
+      <p class="cartel-texto">Los escenarios 3D son representaciones estilizadas: <b>no son mapas reales</b> ni reconstrucciones exactas, y no se muestran retratos de personas históricas.</p>
+      <p class="cartel-texto">La cámara y MediaPipe funcionan <b>sin conexión</b>: los modelos están dentro de la carpeta del juego (<code>assets/mediapipe/</code>). La imagen no se guarda ni se envía a internet.</p>
+      <button class="btn btn-grande btn-principal" id="btnCerrarAcerca">Cerrar</button>
+    </div>
+  </section>
+
+  <!-- ============ CRÉDITOS ============ -->
+  <section id="pantallaCreditos" class="pantalla oculto" role="dialog" aria-modal="true" aria-labelledby="credTit">
+    <div class="tarjeta tarjeta-ancha">
+      <h2 id="credTit">Créditos de las fotos</h2>
+      <div id="credLista" class="creditos-lista"></div>
+      <p class="cartel-texto">Las fotos reales son de Wikimedia Commons, bajo licencia <b>Creative Commons Atribución-CompartirIgual 4.0 (CC BY-SA 4.0)</b>: <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">creativecommons.org/licenses/by-sa/4.0</a>. Muestran el estado actual de los lugares, <b>no su aspecto histórico</b>. Las fotos sin autor indicado son de referencia: su crédito y licencia están pendientes de confirmar y no deben publicarse hasta tenerlos.</p>
+      <button class="btn btn-grande btn-principal" id="btnCerrarCreditos">Cerrar</button>
+    </div>
+  </section>
+
+  <!-- ============ RESULTADOS ============ -->
+  <section id="pantallaFinal" class="pantalla oculto" role="dialog" aria-modal="true" aria-labelledby="finalTit">
+    <div class="tarjeta tarjeta-ancha final">
+      <h2 id="finalTit">¡Recorrido completo!</h2>
+      <div class="estrellas" id="finalEstrellas" aria-hidden="true"></div>
+      <p class="final-medalla" id="finalMedalla"></p>
+      <div class="final-numeros">
+        <div><b id="finalPuntos">0</b><span>Puntos</span></div>
+        <div><b id="finalAciertos">0/8</b><span>Respuestas correctas</span></div>
+        <div><b id="finalAlgodon">0</b><span>Algodón juntado</span></div>
+        <div><b id="finalTiempo">0:00</b><span>Tiempo</span></div>
+        <div><b id="finalVF">0/8</b><span>Verdadero o falso</span></div>
+        <div><b id="finalMov">0:00</b><span>En movimiento</span></div>
+        <div><b id="finalPasos">0</b><span>Pasos (aprox.)</span></div>
+        <div><b id="finalCalorias">—</b><span>Calorías (estimación)</span></div>
+      </div>
+      <p class="final-nota" id="finalNotaEstim"></p>
+      <ol class="final-lista" id="finalLista"></ol>
+      <div class="inicio-botones">
+        <button class="btn btn-grande btn-principal" id="btnOtraVez">↺ Jugar otra vez</button>
+        <button class="btn btn-grande" id="btnFinalInicio">⌂ Pantalla inicial</button>
+      </div>
+    </div>
+  </section>
+
+  <noscript><div class="sin-js">Este juego necesita JavaScript activado.</div></noscript>
+  <div id="errorWebgl" class="pantalla oculto"><div class="tarjeta"><h2>No se pudo iniciar el mundo 3D</h2><p class="cartel-texto" id="errorWebglTexto"></p></div></div>
+
+  <!-- Contenidos históricos (editables, sin compilar) y juego empaquetado: todo local -->
+  <script src="assets/js/estaciones.js"></script>
+  <script src="assets/js/juego.js"></script>
+</body>
+</html>
