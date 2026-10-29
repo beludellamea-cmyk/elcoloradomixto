@@ -86,6 +86,25 @@ function banderaTextura() {
   return t;
 }
 
+function texturaCamino() {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#d7b07a'; g.fillRect(0, 0, 256, 256);
+  const r = rng(31);
+  for (let i = 0; i < 900; i++) {
+    g.fillStyle = r() > 0.5 ? 'rgba(160,110,60,0.18)' : 'rgba(255,240,200,0.14)';
+    g.beginPath(); g.arc(r() * 256, r() * 256, 1 + r() * 4, 0, Math.PI * 2); g.fill();
+  }
+  // Huellas de carro, alineadas con los carriles
+  g.fillStyle = 'rgba(120,80,40,0.32)';
+  g.fillRect(60, 0, 10, 256); g.fillRect(186, 0, 10, 256);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
 function texturaAgua() {
   const c = document.createElement('canvas');
   c.width = 256; c.height = 256;
@@ -217,6 +236,9 @@ const ESCENAS = {
     b.box(10.2, 0.5, 7.7, '#cdb88f', cx, 0, cz);
     b.gable(11.8, 2.6, 8.6, '#b5472f', cx, 3.4, cz);
     b.box(0.2, 2.3, 1.5, '#4a2f1c', cx - 5.05, 0, cz);
+    b.box(0.12, 0.5, 7.2, '#2f6fa8', cx - 5.06, 2.9, cz);
+    b.box(3.0, 7.0, 3.0, '#4a5868', cx + 3.6, 0, cz - 1);
+    for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; b.sphere(0.13, '#ffd23f', cx + 5.2, 5.2 + Math.sin(a) * 1.1, cz - 1 + Math.cos(a) * 1.1, null, 5); }
     for (const dz of [2.6, -2.6]) b.box(0.2, 1.3, 1.2, '#8ec5e8', cx - 5.05, 1.1, cz + dz);
     for (let i = 0; i < 6; i++) b.box(2.1, 0.14, 1.0, i % 2 ? COLOR.blanco : COLOR.rojo, cx - 6.1, 2.75 - 0.0, cz - 3 + i * 1.0 - 0.0 + 0.0, [0, 0, -0.18]);
     for (const dz of [-3.1, 3.1]) b.box(0.2, 2.7, 0.2, COLOR.maderaOsc, cx - 7.1, 0, cz + dz);
@@ -345,6 +367,7 @@ const ESCENAS = {
     b.box(26, 0.07, 2.4, '#e6d2a8', -19.5, 0, cz);
     b.box(2.4, 0.07, 34, '#e6d2a8', cx, 0, cz);
     b.cyl(5, 5, 0.08, '#e6d2a8', cx, 0, cz, 24);
+    b.cyl(3.4, 3.4, 0.14, '#2f8fd0', cx, 0.0, cz, 32);
     // Alambrado de cinco hilos
     const hilos = [0.35, 0.6, 0.85, 1.1, 1.35];
     cerco(b, -9, -20, -9, -3.4, hilos, 3.1, '#6e4a2a');
@@ -371,6 +394,7 @@ const ESCENAS = {
     }
     // Árboles del parque
     for (const [x, z, s] of [[-14, -15, 1.3], [-14, 11, 1.3], [-36, -14, 1.5], [-37, 10, 1.4], [-32, -4, 1.2], [-20, 12, 1.2], [-20, -16, 1.2]]) arbol(b, x, z, s, '#3f9a3c');
+    for (const x of [-23, -27, -31]) { arbol(b, x, -5.6, 1.1, '#3f9a3c'); arbol(b, x, 1.6, 1.1, '#3f9a3c'); }
     // Vacas fuera del alambrado
     vaca(b, 11, -4, 0); vaca(b, 16, 5, 1); vaca(b, 13, -10, 0, false);
     vaca(b, -17, 20, 0);
@@ -499,7 +523,7 @@ export function crearMundo(scene, estaciones) {
     const g = new THREE.SphereGeometry(520, 24, 14);
     const pos = g.attributes.position;
     const col = new Float32Array(pos.count * 3);
-    const top = new THREE.Color('#3f8fe0'), mid = new THREE.Color('#9fd3f5'), hor = new THREE.Color('#e9f6fc');
+    const top = new THREE.Color('#4a9fe6'), mid = new THREE.Color('#b5e0f7'), hor = new THREE.Color('#fff0d4');
     const c = new THREE.Color();
     for (let i = 0; i < pos.count; i++) {
       const y = pos.getY(i) / 520;
@@ -585,6 +609,18 @@ export function crearMundo(scene, estaciones) {
     }
     const camino = b.build({ cast: false, receive: true });
     raiz.add(camino);
+    // Camino de tierra con huellas de carro
+    const texCamino = texturaCamino();
+    for (const [za, zb] of tramos) {
+      const t = texCamino.clone();
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(1, (za - zb) / 14);
+      t.needsUpdate = true;
+      const pl = new THREE.Mesh(new THREE.PlaneGeometry(10.6, za - zb).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ map: t }));
+      pl.position.set(0, 0.07, (za + zb) / 2);
+      pl.receiveShadow = true;
+      raiz.add(pl);
+    }
   }
   // Cerros lejanos
   {
@@ -603,6 +639,7 @@ export function crearMundo(scene, estaciones) {
     for (let i = 0; i < N_ESTACIONES; i++) zonas.push([zEstacion(i) - 26, zEstacion(i) + 30, -48, 48]);
     zonas.push([Z_PUENTE - 46, Z_PUENTE - 4, -400, 400]);
     zonas.push([Z_META - 14, Z_META + 30, -24, 24]);
+    zonas.push([-54, -8, 6, 14]); // brazo del río con peces
     const pos = [];
     for (let z = 30; z > Z_META - 60; z -= 3 + r() * 5) {
       for (const lado of [-1, 1]) {
@@ -618,10 +655,26 @@ export function crearMundo(scene, estaciones) {
     const ic = new THREE.InstancedMesh(copa, new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), pos.length);
     const m4 = new THREE.Matrix4(), col = new THREE.Color();
     const verdes = ['#4f9d3f', '#5eb04a', '#3f8a3a', '#6cbc50', '#4a9a5a'];
+    const base = [];
     pos.forEach(([x, z, s], i) => {
-      m4.compose(new THREE.Vector3(x, 0, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), r() * 6), new THREE.Vector3(s, s * (0.9 + r() * 0.3), s));
+      const yaw = r() * 6, sy = s * (0.9 + r() * 0.3);
+      base.push({ x, z, s, sy, yaw, fase: r() * 6 });
+      m4.compose(new THREE.Vector3(x, 0, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), new THREE.Vector3(s, sy, s));
       it.setMatrixAt(i, m4); ic.setMatrixAt(i, m4);
       col.set(verdes[i % verdes.length]); ic.setColorAt(i, col);
+    });
+    // Copas que se mecen con el viento (poco movimiento, costo bajo)
+    const _pv = new THREE.Vector3(), _qv = new THREE.Quaternion(), _sv = new THREE.Vector3(), _ev = new THREE.Euler();
+    anim.push((t) => {
+      base.forEach((bb, i) => {
+        _pv.set(bb.x, 0, bb.z);
+        _ev.set(Math.sin(t * 1.3 + bb.fase) * 0.035, bb.yaw, Math.cos(t * 1.1 + bb.fase) * 0.035);
+        _qv.setFromEuler(_ev);
+        _sv.set(bb.s, bb.sy, bb.s);
+        m4.compose(_pv, _qv, _sv);
+        ic.setMatrixAt(i, m4);
+      });
+      ic.instanceMatrix.needsUpdate = true;
     });
     it.castShadow = ic.castShadow = true;
     raiz.add(it, ic);
@@ -920,7 +973,7 @@ export function crearMundo(scene, estaciones) {
   }
 
   return {
-    raiz, paradas, algodones, obstaculos, actualizar, reiniciarItems, mostrarObstaculos,
+    raiz, anim, paradas, algodones, obstaculos, actualizar, reiniciarItems, mostrarObstaculos,
     zParada, zEstacion, alturaEn
   };
 }

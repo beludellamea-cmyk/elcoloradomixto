@@ -5,6 +5,7 @@ import { Particulas } from './fx.js';
 import { Sonido } from './audio.js';
 import { clamp, damp } from './util.js';
 import { Cuerpo } from './cuerpo.js';
+import { crearExtras } from './extras.js';
 
 const $ = (id) => document.getElementById(id);
 const E = window.MB_ESTACIONES;
@@ -44,19 +45,19 @@ try {
   throw err;
 }
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.NeutralToneMapping;
 renderer.toneMappingExposure = 1.0;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#dff1fb');
-scene.fog = new THREE.Fog('#dcf0fa', 90, 340);
+scene.background = new THREE.Color('#f7ead6');
+scene.fog = new THREE.Fog('#f3e6cf', 90, 340);
 const camara = new THREE.PerspectiveCamera(62, 1, 0.2, 1400);
 camara.position.set(0, 4, 12);
 
-const hemi = new THREE.HemisphereLight('#d6ecff', '#a8875a', 1.55);
+const hemi = new THREE.HemisphereLight('#fff3dc', '#b08a5c', 1.5);
 scene.add(hemi);
-const sol = new THREE.DirectionalLight('#fff1d2', 2.3);
+const sol = new THREE.DirectionalLight('#ffe0a3', 2.4);
 sol.castShadow = true;
 sol.shadow.mapSize.set(1024, 1024);
 const sc = sol.shadow.camera;
@@ -70,6 +71,8 @@ const jugador = crearJugador();
 scene.add(jugador.objeto);
 const particulas = new Particulas(scene);
 const sfx = new Sonido();
+/* Algarrobos con vainas, peces del río y telegramas o cartas de época */
+const extras = crearExtras({ raiz: mundo.raiz, anim: mundo.anim, particulas, sfx });
 
 /* Cuerpo real (cámara + MediaPipe): la silueta recortada se pega como un plano
    delante de la cámara virtual, así la persona aparece caminando por el pueblo. */
@@ -116,6 +119,7 @@ const VISTAS = [[18, -6], [-15, -3], [14, -3], [-17, -4], [-21, -6], [-24, -2], 
 const J = { x: 0, z: 0, y: 0, lane: 1, v: 0, golpe: 0, saludo: false };
 let estacion = 0; // índice de la próxima estación a visitar (8 = meta)
 let puntos = 0, algodon = 0, aciertos = 0, aciertosVF = 0, tJuego = 0;
+let cartasRec = 0, doradosRec = 0, vainas = 0;
 let resultados = [];
 let paso = 'historia'; // historia | pregunta
 let ordenOpc = [0, 1, 2]; // orden en que se muestran las opciones (mezclado en cada cartel)
@@ -128,6 +132,8 @@ function reiniciarEstado() {
   estacion = 0; puntos = 0; algodon = 0; aciertos = 0; aciertosVF = 0; tJuego = 0; tMov = 0; distRec = 0;
   resultados = E.map(() => ({ intentos: 0, estado: null, puntos: 0 }));
   mundo.reiniciarItems();
+  extras.reiniciar();
+  cartasRec = 0; doradosRec = 0; vainas = 0;
   actualizarHUD();
 }
 
@@ -173,7 +179,7 @@ window.addEventListener('resize', redimensionar);
 /* ================================================================== *
  *  Interfaz: capas, avisos y HUD
  * ================================================================== */
-const CAPAS = ['pantallaPausa', 'pantallaOpciones', 'pantallaAyuda', 'pantallaAcerca', 'pantallaFinal', 'pantallaCamara', 'pantallaCreditos'];
+const CAPAS = ['pantallaPausa', 'pantallaOpciones', 'pantallaAyuda', 'pantallaAcerca', 'pantallaFinal', 'pantallaCamara', 'pantallaCreditos', 'pantallaCarta'];
 function abrirCapa(id, volverA = null) {
   CAPAS.forEach((c) => $(c).classList.add('oculto'));
   capaAnterior = volverA;
@@ -186,6 +192,7 @@ function abrirCapa(id, volverA = null) {
 function cerrarCapa() {
   if (!capaAbierta) return;
   $(capaAbierta).classList.add('oculto');
+  if (capaAbierta === 'pantallaCarta') enPausa = false;
   const volver = capaAnterior;
   capaAbierta = null; capaAnterior = null;
   if (volver) abrirCapa(volver);
@@ -234,6 +241,8 @@ function construirProgreso() {
 function actualizarHUD() {
   $('hudPuntos').textContent = String(puntos);
   $('hudAlgodon').textContent = String(algodon);
+  $('hudCartas').textContent = `${cartasRec}/${extras.totalCartas}`;
+  $('hudPeces').textContent = `${doradosRec}/${extras.totalDorados}`;
   [...$('hudProgreso').children].forEach((li, i) => {
     li.className = '';
     const r = resultados[i];
@@ -344,7 +353,7 @@ function abrirCartel(i) {
   }
   $('textoCuriosidad').textContent = e.curiosidad;
   $('textoPregunta').textContent = e.pregunta;
-  $('cartelFuente').textContent = `Fuente indicada por NotebookLM: ${e.fuente}`;
+  $('cartelFuente').textContent = (e.foto ? '' : 'Escena provisional: todavía no tiene fotografía de referencia. ') + `Fuente indicada por NotebookLM: ${e.fuente}`;
   $('retro').textContent = ''; $('retro').className = 'retro';
   const cont = $('opciones');
   cont.innerHTML = '';
@@ -520,6 +529,44 @@ function recoger(a) {
   actualizarHUD();
 }
 
+/* Vainas, peces dorados y telegramas o cartas: suman puntos y muestran su aviso */
+function procesarColeccionable(c) {
+  if (c.tipo === 'vaina') {
+    vainas++; puntos += 8;
+    sfx.algodon();
+    particulas.emitir(c.x, c.y + 0.4, c.z, '#c98a4b', 10, 2.4, 0.6, 4);
+    aviso('¡Vaina de algarrobo! +8', '', 1000);
+  } else if (c.tipo === 'dorado') {
+    doradosRec++; puntos += 30;
+    sfx.coleccion();
+    particulas.emitir(c.x, c.y, c.z, '#ffd23f', 26, 4.5, 0.9, 5);
+    aviso('¡Pez dorado coleccionado! +30', 'bueno', 1400);
+  } else if (c.tipo === 'carta') {
+    cartasRec++; puntos += 25;
+    sfx.coleccion();
+    particulas.emitir(c.x, c.y, c.z, '#fff4d6', 24, 4, 0.9, 3);
+    abrirCarta(c.indice);
+  }
+  actualizarHUD();
+}
+
+/* Cartel de telegrama o carta: el dato es el de la investigación de la estación */
+function abrirCarta(i) {
+  const e = E[i];
+  const esTelegrama = i % 2 === 0;
+  $('cartaTipo').textContent = esTelegrama ? 'Telegrama' : 'Carta de época';
+  $('cartaTitulo').textContent = `Estación ${e.orden}: ${e.lugar}`;
+  $('cartaTexto').textContent = e.curiosidad;
+  $('cartaNota').textContent = esTelegrama
+    ? 'Recreación ficticia: el papel y el formato del telegrama son ilustrativos. El dato de arriba es de la investigación.'
+    : 'Recreación ilustrativa del formato de carta. El dato de arriba es de la investigación.';
+  $('cartaFuente').textContent = `Fuente indicada por NotebookLM: ${e.fuente}`;
+  $('cartaContador').textContent = `Cartas y telegramas: ${cartasRec}/${extras.totalCartas}`;
+  enPausa = true;
+  abrirCapa('pantallaCarta');
+  setTimeout(() => $('btnCerrarCarta').focus(), 60);
+}
+
 /* Levantar la mano: recoge el algodón más cercano que esté por delante, en el carril actual */
 function recogerConMano() {
   let mejor = null, dist = Infinity;
@@ -529,8 +576,10 @@ function recogerConMano() {
     if (delante < -1.5 || delante > 12 || Math.abs(a.x - J.x) > 1.6) continue;
     if (Math.abs(delante) < dist) { dist = Math.abs(delante); mejor = a; }
   }
-  if (mejor) { mejor.got = true; recoger(mejor); }
-  else aviso('No hay algodón cerca: acercate y levantá la mano', '', 1000);
+  if (mejor) { mejor.got = true; recoger(mejor); return; }
+  const c = extras.recoger(J.x, J.z, true);
+  if (c) procesarColeccionable(c);
+  else aviso('No hay nada cerca: acercate y levantá la mano', '', 1000);
 }
 
 /* Responder con las manos: izquierda = A, derecha = B, las dos = C.
@@ -551,6 +600,7 @@ function responderConMano(lado) {
 /* Traduce los eventos de MediaPipe en acciones del juego */
 function procesarCuerpo() {
   const eventos = cuerpo.consumirEventos();
+  if (capaAbierta === 'pantallaCarta' && eventos.some((ev) => ev.tipo === 'responde' || ev.tipo === 'recoge')) { cerrarCapa(); return; }
   if (enPausa || capaAbierta) return;
   for (const ev of eventos) {
     if (ev.tipo === 'carril' && estado === 'caminando') cambiarCarril(ev.d);
@@ -593,6 +643,8 @@ function moverJugador(dt) {
     for (const a of mundo.algodones) {
       if (!a.got && Math.abs(a.z - J.z) < 1.25 && Math.abs(a.x - J.x) < 1.3) { a.got = true; recoger(a); }
     }
+    const c = extras.recoger(J.x, J.z, false);
+    if (c) procesarColeccionable(c);
   }
   if (opts.obstaculos) {
     for (const o of mundo.obstaculos) {
@@ -637,6 +689,8 @@ function mostrarFinal() {
   $('finalPuntos').textContent = String(puntos);
   $('finalAciertos').textContent = `${aciertos}/${N_ESTACIONES}`;
   $('finalVF').textContent = `${aciertosVF}/${N_ESTACIONES}`;
+  $('finalCartas').textContent = `${cartasRec}/${extras.totalCartas}`;
+  $('finalDorados').textContent = `${doradosRec}/${extras.totalDorados}`;
   $('finalAlgodon').textContent = String(algodon);
   $('finalTiempo').textContent = formatoTiempo(tJuego);
   if (modoCamara) cuerpo.detener(); // se apaga la cámara al terminar
@@ -794,6 +848,7 @@ window.addEventListener('keydown', (ev) => {
   if (c === 'KeyP' && !ev.repeat) { if (enPausa) continuar(); else pausar(); return; }
   if (c === 'KeyM' && !ev.repeat) { opts.sonido = !opts.sonido; guardarOpts(); aplicarOpts(); return; }
   if (c === 'KeyO' && !ev.repeat && estado !== 'inicio' && !capaAbierta) { pausarYOpciones(); return; }
+  if (capaAbierta === 'pantallaCarta' && !ev.repeat && (c === 'Enter' || c === 'Space')) { cerrarCapa(); return; }
   if (capaAbierta) return;
 
   if (estado === 'cartel' && c === 'KeyV' && !ev.repeat) { alternarVerLugar(); return; }
@@ -865,6 +920,7 @@ $('btnOpcionesInicio').addEventListener('click', () => abrirCapa('pantallaOpcion
 $('btnAcerca').addEventListener('click', () => abrirCapa('pantallaAcerca'));
 $('btnCreditos').addEventListener('click', () => abrirCapa('pantallaCreditos'));
 $('btnCerrarCreditos').addEventListener('click', cerrarCapa);
+$('btnCerrarCarta').addEventListener('click', cerrarCapa);
 $('btnCerrarAyuda').addEventListener('click', cerrarCapa);
 $('btnCerrarAcerca').addEventListener('click', cerrarCapa);
 $('btnCerrarOpciones').addEventListener('click', () => { guardarOpts(); cerrarCapa(); });
@@ -958,7 +1014,7 @@ function bucle() {
   if (modoCamara && cuerpo.activo) {
     cuerpo.actualizar(activo ? dt : 0);
     if (cuerpo.nuevaSilueta) { siluetaTex.needsUpdate = true; cuerpo.nuevaSilueta = false; }
-    if (activo) procesarCuerpo();
+    procesarCuerpo();
     if (activo && estado === 'calibrando' && cuerpo.calibrado) {
       estado = 'caminando';
       aviso('¡Listo! Caminá en el lugar para avanzar', '', 2000);
@@ -988,6 +1044,8 @@ function bucle() {
   if (activo) {
     actualizarCamara(dt);
     mundo.actualizar(t, dt, visible ? J.z : zEstacion(0), camara);
+    extras.actualizar(t, dt, J.z);
+    if (estado === 'caminando' && Math.random() < dt * 3) particulas.emitir(J.x + (Math.random() - 0.5) * 16, 0.5 + Math.random() * 4, J.z - 6 - Math.random() * 40, '#fff3c4', 1, 0.3, 3, 0.15);
     particulas.actualizar(dt);
   }
   // sol y sombra siguen al jugador
@@ -1017,5 +1075,5 @@ window.__MB = {
   cuerpo, get modoCamara() { return modoCamara; }, get tMov() { return tMov; }, get distRec() { return distRec; },
   alternarVerLugar, jugar, irAEstacion, abrirCartel, irAPregunta, responder, cerrarCartel, pausar, continuar,
   get ordenOpc() { return ordenOpc; }, get estado() { return estado; }, get paso() { return paso; }, get estacion() { return estacion; },
-  get puntos() { return puntos; }, get algodon() { return algodon; }, J, mundo, camara, renderer, teclas
+  get puntos() { return puntos; }, get algodon() { return algodon; }, get cartasRec() { return cartasRec; }, get doradosRec() { return doradosRec; }, get vainas() { return vainas; }, extras, J, mundo, camara, renderer, teclas
 };

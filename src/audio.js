@@ -39,5 +39,7 @@ export class Sonido {
   error() { this._nota(300, 0, 0.28, { tipo: 'sine', vol: 0.25, hasta: 200 }); }
   golpe() { this._nota(160, 0, 0.18, { tipo: 'square', vol: 0.18, hasta: 70 }); }
   clic() { this._nota(660, 0, 0.06, { tipo: 'sine', vol: 0.18 }); }
+  coleccion() { [784, 988, 1175, 1568].forEach((f, i) => this._nota(f, i * 0.07, 0.22, { tipo: 'triangle', vol: 0.26 })); }
+  salpicadura() { this._nota(700, 0, 0.22, { tipo: 'sine', vol: 0.12, hasta: 260 }); }
   final() { [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => this._nota(f, i * 0.13, 0.35, { tipo: 'triangle', vol: 0.26 })); }
 }

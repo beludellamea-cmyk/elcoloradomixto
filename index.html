@@ -16,6 +16,8 @@
     <div class="hud-izq">
       <div class="chip chip-puntos"><span class="chip-etq">Puntos</span><b id="hudPuntos">0</b></div>
       <div class="chip chip-algodon" title="Capullos de algodón"><span class="ico-algodon" aria-hidden="true"></span><span class="chip-etq">Algodón</span><b id="hudAlgodon">0</b></div>
+      <div class="chip chip-cartas" title="Cartas y telegramas de época"><span class="chip-etq">📜 Cartas</span><b id="hudCartas">0/8</b></div>
+      <div class="chip chip-peces" title="Peces dorados del río"><span class="chip-etq">🐟 Dorados</span><b id="hudPeces">0/4</b></div>
     </div>
     <ol class="hud-progreso" id="hudProgreso" aria-label="Progreso por estaciones"></ol>
     <div class="hud-der">
@@ -222,6 +224,18 @@
   </section>
 
   <!-- ============ ACERCA DE ============ -->
+  <section id="pantallaCarta" class="pantalla oculto" role="dialog" aria-modal="true" aria-labelledby="cartaTitulo">
+    <div class="tarjeta tarjeta-ancha carta-papel">
+      <p class="carta-tipo" id="cartaTipo">Telegrama</p>
+      <h2 id="cartaTitulo">Estación</h2>
+      <p class="carta-texto" id="cartaTexto"></p>
+      <p class="carta-nota" id="cartaNota"></p>
+      <p class="cartel-fuente" id="cartaFuente"></p>
+      <p class="carta-contador" id="cartaContador"></p>
+      <button class="btn btn-grande btn-principal" id="btnCerrarCarta">Seguir el recorrido ➜</button>
+    </div>
+  </section>
+
   <section id="pantallaAcerca" class="pantalla oculto" role="dialog" aria-modal="true" aria-labelledby="acercaTit">
     <div class="tarjeta tarjeta-ancha">
       <h2 id="acercaTit">Acerca de los datos históricos</h2>
@@ -255,6 +269,8 @@
         <div><b id="finalAlgodon">0</b><span>Algodón juntado</span></div>
         <div><b id="finalTiempo">0:00</b><span>Tiempo</span></div>
         <div><b id="finalVF">0/8</b><span>Verdadero o falso</span></div>
+        <div><b id="finalCartas">0/8</b><span>Cartas de época</span></div>
+        <div><b id="finalDorados">0/4</b><span>Peces dorados</span></div>
         <div><b id="finalMov">0:00</b><span>En movimiento</span></div>
         <div><b id="finalPasos">0</b><span>Pasos (aprox.)</span></div>
         <div><b id="finalCalorias">—</b><span>Calorías (estimación)</span></div>
