@@ -161,8 +161,60 @@ export function crearExtras({ raiz, anim, particulas, sfx }) {
     cartas.push({ indice: i, esTelegrama, g, x, z, got: false });
   }
 
+  /* ---------- Tucán mensajero: cruza el cielo antes de cada estación y suelta un pergamino con la pregunta ---------- */
+  const tucan = new THREE.Group();
+  {
+    const b = new Builder();
+    b.sphere(0.45, '#1f1f24', 0, 0, 0, [1.6, 1, 1], 8);
+    b.sphere(0.3, '#ffd23f', 0.35, -0.05, 0, [1, 1, 1], 7);
+    b.cone(0.2, 0.7, '#ff7a2f', 0.85, 0.05, 0, 5, [0, 0, -Math.PI / 2]);
+    b.box(1.0, 0.12, 0.7, '#1f1f24', -0.25, 0.3, 0, [0, 0, 0.35]);
+    tucan.add(b.build({ cast: false, receive: false }));
+    tucan.visible = false;
+    raiz.add(tucan);
+  }
+  const pergaminos = [];
+  const pergGeo = new THREE.CylinderGeometry(0.13, 0.13, 0.7, 8).rotateZ(Math.PI / 2);
+  const pergMat = new THREE.MeshLambertMaterial({ color: '#f6e7bf' });
+  for (let i = 0; i < N_ESTACIONES; i++) {
+    const m = new THREE.Mesh(pergGeo, pergMat);
+    m.visible = false;
+    m.castShadow = true;
+    raiz.add(m);
+    pergaminos.push({ indice: i, m, z: zEstacion(i) + 26, estado: 'espera', t: 0, got: false });
+  }
+  const vuelo = { activo: false, i: -1, t: 0 };
+  const volado = Array(N_ESTACIONES).fill(false);
+  const T_VUELO = 6, T_SUELTA = 3;
+  function actualizarTucan(dt, jz) {
+    if (!vuelo.activo) {
+      for (let i = 0; i < N_ESTACIONES; i++) {
+        const dz = jz - pergaminos[i].z;
+        if (!volado[i] && dz < 75 && dz > -10) { volado[i] = true; vuelo.activo = true; vuelo.i = i; vuelo.t = 0; break; }
+      }
+    }
+    if (vuelo.activo) {
+      vuelo.t += dt;
+      const u = Math.min(1, vuelo.t / T_VUELO);
+      const per = pergaminos[vuelo.i];
+      tucan.visible = true;
+      tucan.position.set(lerp(-55, 55, u), 11 + Math.sin(vuelo.t * 2.2) * 0.4, per.z);
+      tucan.rotation.y = Math.sin(vuelo.t * 3) * 0.15;
+      if (per.estado === 'espera' && vuelo.t >= T_SUELTA) { per.estado = 'cayendo'; per.t = 0; per.m.visible = true; }
+      if (u >= 1) { vuelo.activo = false; tucan.visible = false; }
+    }
+    for (const per of pergaminos) {
+      if (per.estado !== 'cayendo') continue;
+      per.t += dt;
+      const u = Math.min(1, per.t / 0.9);
+      per.m.position.set(0, lerp(9, 0.2, u * u), per.z);
+      if (u >= 1) per.estado = 'suelo';
+    }
+  }
+
   /* ---------- Lógica común ---------- */
   function actualizar(t, dt, jz) {
+    actualizarTucan(dt, jz);
     actualizarVainas(dt, jz);
     actualizarPeces(t, jz);
     for (const c of cartas) {
@@ -190,6 +242,9 @@ export function crearExtras({ raiz, anim, particulas, sfx }) {
         cands.push({ tipo: 'dorado', ref: q, x, y, z: q.z, ok: dentroPez(x - jx, jz - q.z) });
       }
     }
+    for (const per of pergaminos) {
+      if (per.estado === 'suelo' && !per.got) cands.push({ tipo: 'pergamino', ref: per, x: 0, y: 0.3, z: per.z, ok: dentro(-jx, jz - per.z), indice: per.indice });
+    }
     let mejor = null, dist = Infinity;
     for (const c of cands) {
       if (!c.ok) continue;
@@ -199,6 +254,7 @@ export function crearExtras({ raiz, anim, particulas, sfx }) {
     if (!mejor) return null;
     mejor.ref.got = true;
     if (mejor.tipo === 'carta') mejor.ref.g.visible = false;
+    if (mejor.tipo === 'pergamino') mejor.ref.m.visible = false;
     return { tipo: mejor.tipo, x: mejor.x, y: mejor.y, z: mejor.z, indice: mejor.indice };
   }
 
@@ -207,6 +263,9 @@ export function crearExtras({ raiz, anim, particulas, sfx }) {
     for (const a of arboles) a.activo = false;
     for (const q of peces) { q.got = false; q.enAire = false; }
     for (const c of cartas) { c.got = false; c.g.visible = true; }
+    vuelo.activo = false; vuelo.t = 0; tucan.visible = false;
+    volado.fill(false);
+    for (const per of pergaminos) { per.estado = 'espera'; per.t = 0; per.got = false; per.m.visible = false; }
     podsMesh.instanceMatrix.needsUpdate = true;
   }
 

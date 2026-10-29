@@ -541,6 +541,11 @@ function procesarColeccionable(c) {
     sfx.coleccion();
     particulas.emitir(c.x, c.y, c.z, '#ffd23f', 26, 4.5, 0.9, 5);
     aviso('¡Pez dorado coleccionado! +30', 'bueno', 1400);
+  } else if (c.tipo === 'pergamino') {
+    puntos += 10;
+    sfx.coleccion();
+    particulas.emitir(c.x, c.y, c.z, '#f6e7bf', 18, 3, 0.8, 4);
+    abrirCarta(c.indice, true);
   } else if (c.tipo === 'carta') {
     cartasRec++; puntos += 25;
     sfx.coleccion();
@@ -551,21 +556,29 @@ function procesarColeccionable(c) {
 }
 
 /* Cartel de telegrama o carta: el dato es el de la investigación de la estación */
-function abrirCarta(i) {
+function abrirCarta(i, pergamino = false) {
   const e = E[i];
   const esTelegrama = i % 2 === 0;
-  $('cartaTipo').textContent = esTelegrama ? 'Telegrama' : 'Carta de época';
   $('cartaTitulo').textContent = `Estación ${e.orden}: ${e.lugar}`;
-  $('cartaTexto').textContent = e.curiosidad;
-  $('cartaNota').textContent = esTelegrama
-    ? 'Recreación ficticia: el papel y el formato del telegrama son ilustrativos. El dato de arriba es de la investigación.'
-    : 'Recreación ilustrativa del formato de carta. El dato de arriba es de la investigación.';
-  $('cartaFuente').textContent = `Fuente indicada por NotebookLM: ${e.fuente}`;
+  if (pergamino) {
+    $('cartaTipo').textContent = 'Pergamino del tucán';
+    $('cartaTexto').textContent = e.pregunta;
+    $('cartaNota').textContent = 'Esta es la pregunta que trajo el tucán. Respondela en el cartel de la estación, con las manos o con el teclado.';
+    $('cartaFuente').textContent = '';
+  } else {
+    $('cartaTipo').textContent = esTelegrama ? 'Telegrama' : 'Carta de época';
+    $('cartaTexto').textContent = e.curiosidad;
+    $('cartaNota').textContent = esTelegrama
+      ? 'Recreación ficticia: el papel y el formato del telegrama son ilustrativos. El dato de arriba es de la investigación.'
+      : 'Recreación ilustrativa del formato de carta. El dato de arriba es de la investigación.';
+    $('cartaFuente').textContent = `Fuente indicada por NotebookLM: ${e.fuente}`;
+  }
   $('cartaContador').textContent = `Cartas y telegramas: ${cartasRec}/${extras.totalCartas}`;
   enPausa = true;
   abrirCapa('pantallaCarta');
   setTimeout(() => $('btnCerrarCarta').focus(), 60);
 }
+
 
 /* Levantar la mano: recoge el algodón más cercano que esté por delante, en el carril actual */
 function recogerConMano() {
