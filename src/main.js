@@ -271,7 +271,7 @@ function textoAyuda() {
   if (estado === 'calibrando') return 'Quedate quieto y de frente para calibrar';
   const eq = opts.equipo ? ' · compañero/a: ' + k('1') + k('2') + k('3') + ' o ' + k('A') + k('B') + k('C') : '';
   if (estado === 'cartel' && paso === 'vf') return modoCamara ? '✋ izquierda = verdadero · derecha = falso' : `${k('T')} verdadero · ${k('F')} falso`;
-  if (estado === 'cartel' && modoCamara) return paso === 'historia' ? '✋ levantá una mano para ir a la pregunta' : '✋ izquierda = A · derecha = B · las dos = C' + eq;
+  if (estado === 'cartel' && modoCamara) return paso === 'historia' ? '✋ levantá las dos manos para ir a la pregunta' : '✋ izquierda = A · derecha = B · las dos = C' + eq;
   if (estado === 'cartel') return (paso === 'historia' ? `${k('Enter')} ir a la pregunta` : `${k('1')} ${k('2')} ${k('3')} elegir respuesta`) + eq;
   if (modoCamara) return opts.sentado ? 'Modo sentado: avanzás solo · inclinate a los costados para cambiar de carril' : 'Caminá en el lugar · pasos a los costados para cambiar de carril · ✋ levantá la mano para recoger algodón';
   if (opts.sentado) return `Modo sentado: avanzás solo · ${k('←')} ${k('→')} cambiar de carril`;
@@ -599,7 +599,7 @@ function recogerConMano() {
    Las letras se muestran en el orden en que aparecen las opciones. */
 function responderConMano(lado) {
   if (estado !== 'cartel' || verLugar) return;
-  if (paso === 'historia') { irAPregunta(); return; }
+  if (paso === 'historia') { if (lado === 'ambas') irAPregunta(); else aviso('Para ir a la pregunta, levantá las dos manos', '', 1600); return; }
   if (paso === 'pregunta') {
     if (resultados[estacion].estado) { irAVF(); return; }
     responder(lado === 'izq' ? 0 : lado === 'der' ? 1 : 2);

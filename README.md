@@ -23,6 +23,8 @@ Funciona **sin conexión**: se abre con doble clic en `index.html` (Chrome o Edg
 
 Las letras se muestran en el orden en que aparecen las opciones en pantalla.
 
+**Para ir a la pregunta:** levantá **las dos manos** (con la cámara) o apretá Enter (con el teclado). Así no se pasa a la pregunta por error.
+
 **Verdadero o falso:** después de cada pregunta aparece una afirmación sobre la estación. Mano izquierda = **verdadero**, mano derecha = **falso** (teclado: T / F). Acertar suma 20 puntos.
 
 **Modo equipo:** en Accesibilidad, marcá la opción. Una persona camina con el cuerpo y otra responde con el teclado: 1 2 3 (o A B C) para elegir la respuesta y T / F para verdadero o falso.
